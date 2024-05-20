@@ -1,40 +1,15 @@
 # frozen_string_literal: true
 
-require 'aws-sdk-dynamodb'
+require "aws-sdk-dynamodb"
 
 unless AppConfig.has_key? :metrics
-  AppConfig[:metrics] = {
-    table: ENV.fetch('ASPACE_AWS_METRICS_TABLE'),
-    id_key: ENV.fetch('ASPACE_AWS_METRICS_ID_KEY'),
-    id_val: ENV.fetch('ASPACE_AWS_METRICS_ID_VAL'),
-    schedule: ENV.fetch('ASPACE_AWS_METRICS_SCHEDULE', '* * * * *'), # every min for testing
-    collect: [
-      {
-        namespace: 'ArchivesSpace/ResourceTotal',
-        record_type: 'Resource',
-        record_method: :count,
-        cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
-      },
-      {
-        namespace: 'ArchivesSpace/DigitalObjectTotal',
-        record_type: 'DigitalObject',
-        record_method: :count,
-        cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
-      },
-      {
-        namespace: 'ArchivesSpace/UserLastLogin',
-        record_type: 'User',
-        record_method: :last_login,
-        cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
-      },
-    ]
-  }
+  AppConfig[:metrics] = {}
 end
 
 ArchivesSpaceService.loaded_hook do
   metrics_cfg = AppConfig[:metrics]
   metrics_schedule = metrics_cfg[:schedule]
-  metrics_label = 'aspace.aws.metrics'
+  metrics_label = "aspace.aws.metrics"
 
   if metrics_schedule.nil?
     puts "Skipping metrics collection as schedule is undefined"
@@ -45,16 +20,16 @@ ArchivesSpaceService.loaded_hook do
     metrics_schedule,
     allow_overlapping: false, # TODO: [newer versions] overlap: false
     mutex: metrics_label,
-    tags:  metrics_label
+    tags: metrics_label
   ) do
-    dynamodb = ENV['ASPACE_ENV'] == 'development' ? Aws::DynamoDB::Client.new(endpoint: 'http://host.docker.internal:8000') : Aws::DynamoDB::Client.new
+    dynamodb = (ENV["ASPACE_ENV"] == "development") ? Aws::DynamoDB::Client.new(endpoint: "http://host.docker.internal:8000") : Aws::DynamoDB::Client.new
 
     metrics_table = metrics_cfg[:table]
     metrics_id_key = metrics_cfg[:id_key]
     metrics_id_val = metrics_cfg[:id_val]
 
     metrics_cfg[:collect].each do |c|
-      metric_name = c[:namespace].split('/')[-1]
+      metric_name = c[:namespace].split("/")[-1]
       metric_value = c[:record_type].constantize.send(c[:record_method])
       puts "Evaluated metric [#{metrics_id_key}] [#{metrics_id_val}]: [#{metric_name}] [#{metric_value}]"
 
@@ -65,7 +40,7 @@ ArchivesSpaceService.loaded_hook do
         },
         update_expression: "SET #{metric_name} = :value",
         expression_attribute_values: {
-          ':value' => metric_value
+          ":value" => metric_value
         }
       })
     end
