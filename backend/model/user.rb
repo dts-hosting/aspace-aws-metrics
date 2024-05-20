@@ -1,4 +1,4 @@
-require_relative 'mixins/user_metrics'
+require_relative "mixins/user_metrics"
 
 class User
   include UserMetrics
