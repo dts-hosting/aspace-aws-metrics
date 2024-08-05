@@ -1,33 +1,33 @@
 # aspace-aws-metrics
 
-Send metric data to AWS DynamoDB/CloudWatch (latter TODO).
+Send metric data to AWS DynamoDB.
 
 ## Config
 
 ```ruby
 AppConfig[:metrics] = {
-  table: ENV.fetch('ASPACE_AWS_METRICS_TABLE'),
-  id_key: ENV.fetch('ASPACE_AWS_METRICS_ID_KEY'),
-  id_val: ENV.fetch('ASPACE_AWS_METRICS_ID_VAL'),
-  schedule: ENV.fetch('ASPACE_AWS_METRICS_SCHEDULE', '* * * * *'), # every min for testing
+  table: ENV.fetch("ASPACE_AWS_METRICS_TABLE"),
+  id_key: ENV.fetch("ASPACE_AWS_METRICS_ID_KEY"),
+  id_val: ENV.fetch("ASPACE_AWS_METRICS_ID_VAL"),
+  schedule: ENV.fetch("ASPACE_AWS_METRICS_SCHEDULE", "* * * * *"), # every min for testing
   collect: [
     {
-      namespace: 'ArchivesSpace/ResourceTotal',
-      record_type: 'Resource',
-      record_method: :count,
-      cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
+      name: "RepoTotal",
+      value: -> { Repository.where(hidden: 0).count },
     },
     {
-      namespace: 'ArchivesSpace/DigitalObjectTotal',
-      record_type: 'DigitalObject',
-      record_method: :count,
-      cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
+      name: "ResourceTotal",
+      value: -> { Resource.count },
     },
     {
-      namespace: 'ArchivesSpace/UserLastLogin',
-      record_type: 'User',
-      record_method: :last_login,
-      cloudwatch: ENV.fetch('ASPACE_AWS_METRICS_CLOUDWATCH', false),
+      name: "UserLastLogin",
+      value: -> {
+        User.where(is_system_user: 0).order(Sequel.desc(:user_mtime)).first[:user_mtime].to_s rescue ""
+      },
+    },
+    {
+      name: "DigitalObjectTotal",
+      value: -> { DigitalObject.count },
     },
   ]
 }

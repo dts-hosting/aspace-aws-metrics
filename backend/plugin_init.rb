@@ -29,8 +29,8 @@ ArchivesSpaceService.loaded_hook do
     metrics_id_val = metrics_cfg[:id_val]
 
     metrics_cfg[:collect].each do |c|
-      metric_name = c[:namespace].split("/")[-1]
-      metric_value = c[:record_type].constantize.send(c[:record_method])
+      metric_name = c[:name]
+      metric_value = c[:value].call
       puts "Evaluated metric [#{metrics_id_key}] [#{metrics_id_val}]: [#{metric_name}] [#{metric_value}]"
 
       dynamodb.update_item({
